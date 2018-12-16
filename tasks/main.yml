@@ -1,0 +1,99 @@
+---
+# Selective include of vars
+- name: include variables for RHEL - 6/7
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "redhat.yml"
+    - "main.yml"
+  when: >
+    ansible_os_family == 'RedHat' and
+    ansible_distribution == 'RedHat'
+    and (
+      ansible_distribution_major_version == '7' or
+      ansible_distribution_major_version == '6'
+    )
+
+- name: include variables for CentOS - 6/7
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "centos.yml"
+    - "main.yml"
+  when: >
+    ansible_os_family == 'RedHat' and
+    ansible_distribution == 'CentOS'
+    and (
+      ansible_distribution_major_version == '7' or
+      ansible_distribution_major_version == '6'
+    )
+
+- name: include variables for Amazon Linux
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "amazon.yml"
+    - "main.yml"
+  when: >
+    ansible_os_family == 'RedHat' and
+    ansible_distribution == 'Amazon'
+
+- name: include variables for Debian
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "debian.yml"
+    - "main.yml"
+  when: >
+    ansible_os_family == 'Debian' and
+    ansible_distribution == 'Debian'
+
+- name: include variables for Ubuntu
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "ubuntu.yml"
+    - "main.yml"
+  when: >
+    ansible_os_family == 'Debian' and
+    ansible_distribution == 'Ubuntu'
+
+# Globalize vars
+- name: definning global facts
+  set_fact:
+    aws_cwa_package: "{{ aws_cwa_package }}"
+    aws_cwa_package_gpg: "{{ aws_cwa_package_gpg }}"
+    aws_cwa_package_url: "{{ aws_cwa_package_url }}"
+    aws_cwa_package_signature: "{{ aws_cwa_package_signature }}"
+
+# Installation tasks
+- name: include tasks for installation on RedHat/CentOS and Amazon Linux distribution
+  include_tasks: "install-{{ ansible_os_family|lower }}.yml"
+  when: >
+    ansible_os_family == 'RedHat' and (
+      ansible_distribution == 'CentOS' or
+      ansible_distribution == 'RedHat' or
+      ansible_distribution == 'Amazon'
+    )
+
+- name: include tasks for installation on Debian/Ubuntu distribution
+  include_tasks: "install-{{ ansible_os_family|lower }}.yml"
+  when: >
+    ansible_os_family == 'Debian' and (
+      ansible_distribution == 'Debian' or
+      ansible_distribution == 'Ubuntu'
+    )
+
+- name: enable service on boot
+  service:
+    name: "amazon-cloudwatch-agent"
+    enabled: "yes"
+
+- name: Add log rotation for amazon-cloudwatch-agent.log
+  copy:
+    dest: '/etc/logrotate.d/aws-cwa'
+    owner: 'root'
+    group: 'root'
+    content: |
+      /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log {
+          size 50M
+          rotate 5
+          compress
+          missingok
+          copytruncate
+      }

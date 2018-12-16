@@ -1,0 +1,5 @@
+---
+aws_cwa_package: amazon-cloudwatch-agent
+aws_cwa_package_gpg: https://s3.amazonaws.com/amazoncloudwatch-agent/assets/amazon-cloudwatch-agent.gpg
+
+aws_cwa_temp_path: /tmp
